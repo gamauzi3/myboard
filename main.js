@@ -164,12 +164,14 @@ app.post('/login', function(req, res){
 
 app.post('/photo', upload.single('picture'), function(req, res){//이미지 업로드릉 처리한다.
     console.log(req.file.path);
-    imagepath ='/image/' + req.file.originalname; //파일 원래 이름으로 image폴더에 저장한다.
+    req.session.imagepath ='/image/' + req.file.originalname;
+     //파일 원래 이름으로 image폴더에 저장한다.
 })
 
 app.post('/text', textupload.single('txtfile'), function(req, res){ //텍스트파일 업로드를 처리한다.
     console.log(req.file.path);
-    textpath = '/text/' + req.file.originalname; //파일의 원래 이름으로 text 폴더에 저장한다.
+    req.session.textpath = '/text/' + req.file.originalname;
+    //파일의 원래 이름으로 text 폴더에 저장한다.
 })
 
 app.post('/save', function(req, res){ //save 처리가 들어왔을때 게시글을 저장한다.
@@ -177,13 +179,15 @@ app.post('/save', function(req, res){ //save 처리가 들어왔을때 게시글
     console.log(req.body.content);
     console.log(req.body.someDate);
     mydb.collection('post').insertOne(
-        {title:req.body.title, content:req.body.content, date: req.body.someDate, path: imagepath, path2: textpath }
+        {title:req.body.title, content:req.body.content, date: req.body.someDate, path: imagepath || '', path2: textpath || ''}
         //post형식으로 제목, 내용, 작성일, 이미지 경로, 텍스트 경로를 저장한다.
     ).then(result => {
         console.log(result);
         console.log('게시글 작성 완료');
     })
-    res.redirect('/list');//작성후 list를 다시 렌더링한다.
+    req.session.imagepath = '';
+    req.session.textpath = '';
+    res.redirect('/list');//작성후 이미지나 텍스트 경로를 초기화한뒤 list를 다시 렌더링한다.
 });
 
 app.post('/edit', function(req, res){ //edit 처리가 들어왔을시 게시글을 수정한다.
@@ -191,10 +195,12 @@ app.post('/edit', function(req, res){ //edit 처리가 들어왔을시 게시글
     req.body.id = new ObjId(req.body.id); //게시글의 id를 objectid로 바꾼다.
     mydb
     .collection("post")
-    .updateOne({_id : req.body.id}, {$set : {title : req.body.title, content : req.body.content, date : req.body.someDate, path: imagepath, path2: textpath}})
+    .updateOne({_id : req.body.id}, {$set : {title : req.body.title, content : req.body.content, date : req.body.someDate, path: imagepath || '', path2: textpath || ''}})
     //post 형식으로 기존 데이터의 제목, 내용, 작성일, 파일 경로를 새로 update한다.
     .then((result) => {
         console.log("수정완료");
+        req.session.imagepath = '';
+        req.session.textpath = '';
         res.redirect('/list'); //수정후 list를 렌더링한다.
     })
     .catch((err) => {
